@@ -4,7 +4,7 @@ using Orders.Api.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddSingleton<IOrderService, InMemoryOrderService>();
+builder.Services.AddSingleton<IProductService, InMemoryProductService>();
 builder.Services
     .AddApiVersioning(options =>
     {

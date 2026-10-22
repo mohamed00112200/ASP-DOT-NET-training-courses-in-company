@@ -2,7 +2,7 @@ using Orders.Api.Models;
 
 namespace Orders.Api.Services;
 
-public interface IOrderService
+public interface IProductService
 {
-    Order? GetById(int id);
+    Product GetProduct();
 }
