@@ -5,3 +5,4 @@
 TestResults/
 *.user
 *.suo
+Orders.Api/products.db

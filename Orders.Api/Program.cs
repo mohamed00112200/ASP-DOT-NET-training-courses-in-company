@@ -1,10 +1,14 @@
 using Asp.Versioning;
-using Orders.Api.Services;
+using Microsoft.EntityFrameworkCore;
+using Orders.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddSingleton<IProductService, InMemoryProductService>();
+builder.Services.AddDbContext<ProductsDbContext>(options =>
+    options.UseSqlite(
+        builder.Configuration.GetConnectionString("Products")
+        ?? $"Data Source={Path.Combine(builder.Environment.ContentRootPath, "products.db")}"));
 builder.Services
     .AddApiVersioning(options =>
     {
@@ -14,6 +18,12 @@ builder.Services
     .AddMvc();
 
 var app = builder.Build();
+
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ProductsDbContext>();
+    await dbContext.Database.EnsureCreatedAsync();
+}
 
 app.MapControllers();
 
