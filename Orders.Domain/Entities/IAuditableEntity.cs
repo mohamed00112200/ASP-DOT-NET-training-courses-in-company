@@ -1,4 +1,4 @@
-namespace Orders.Api.Models;
+namespace Orders.Domain.Entities;
 
 public interface IAuditableEntity
 {

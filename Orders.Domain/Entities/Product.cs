@@ -1,4 +1,4 @@
-namespace Orders.Api.Models;
+namespace Orders.Domain.Entities;
 
 public sealed class Product : IAuditableEntity
 {
@@ -18,6 +18,5 @@ public sealed class Product : IAuditableEntity
 
     public bool IsDeleted { get; set; }
 
-    // SQL Server alternative: use `byte[] RowVersion { get; set; } = [];` and configure it with `.IsRowVersion()`.
     public Guid ConcurrencyToken { get; set; }
 }

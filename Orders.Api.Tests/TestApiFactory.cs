@@ -2,9 +2,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Orders.Api.Data;
+using Orders.Infrastructure.Data;
 
 namespace Orders.Api.Tests;
 
@@ -17,6 +18,7 @@ public sealed class TestApiFactory : WebApplicationFactory<Program>
         _connection.Open();
         builder.ConfigureServices(services =>
         {
+            services.RemoveAll<IDbContextOptionsConfiguration<ProductsDbContext>>();
             services.RemoveAll<DbContextOptions<ProductsDbContext>>();
             services.AddDbContext<ProductsDbContext>(options => options.UseSqlite(_connection));
         });

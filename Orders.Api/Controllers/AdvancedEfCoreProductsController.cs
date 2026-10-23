@@ -2,8 +2,11 @@ using System.ComponentModel.DataAnnotations;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Orders.Api.Data;
 using Orders.Api.Models;
+using Orders.Application.Cqrs;
+using Orders.Application.Products;
+using Orders.Domain.Entities;
+using Orders.Infrastructure.Data;
 
 namespace Orders.Api.Controllers;
 
@@ -12,6 +15,7 @@ namespace Orders.Api.Controllers;
 [Route("api/products")]
 public sealed class AdvancedEfCoreProductsController(
     ProductsDbContext dbContext,
+    IRequestDispatcher requestDispatcher,
     ILogger<AdvancedEfCoreProductsController> logger) : ControllerBase
 {
     [HttpGet]
@@ -28,36 +32,57 @@ public sealed class AdvancedEfCoreProductsController(
             return BadRequest("The requested page is outside the supported range.");
         }
 
-        var query = dbContext.Products.AsNoTracking();
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            query = query.Where(product => product.Name.StartsWith(search.Trim()));
-        }
+        var result = await requestDispatcher.Send<
+            GetProductsQuery,
+            PagedProductsDto<ProductListItemDto>>(
+            new GetProductsQuery(pageNumber, pageSize, search),
+            cancellationToken);
+        var response = new PagedResponse<ProductListItemResponse>(
+            result.Items
+                .Select(item => new ProductListItemResponse(
+                    item.Id,
+                    item.Name,
+                    item.Price,
+                    item.CategoryId,
+                    item.CategoryName,
+                    item.ConcurrencyToken,
+                    item.CreatedAt,
+                    item.UpdatedAt))
+                .ToList(),
+            result.PageNumber,
+            result.PageSize,
+            result.TotalCount,
+            result.TotalPages);
 
-        var totalCount = await query.CountAsync(cancellationToken);
-        var items = await query
-            .OrderBy(product => product.Id)
-            .Skip((int)skip)
-            .Take(pageSize)
-            .Select(product => new ProductListItemResponse(
-                product.Id,
-                product.Name,
-                product.Price,
-                product.CategoryId,
-                product.Category.Name,
-                product.ConcurrencyToken,
-                product.CreatedAt,
-                product.UpdatedAt))
-            .ToListAsync(cancellationToken);
+        return Ok(response);
+    }
 
-        var result = new PagedResponse<ProductListItemResponse>(
-            items,
-            pageNumber,
-            pageSize,
-            totalCount,
-            (int)Math.Ceiling(totalCount / (double)pageSize));
+    [HttpGet("{id:int}")]
+    [ProducesResponseType<ProductDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ProductDto>> GetProductById(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var product = await requestDispatcher.Send<GetProductByIdQuery, ProductDto?>(
+            new GetProductByIdQuery(id),
+            cancellationToken);
 
-        return Ok(result);
+        return product is null ? NotFound() : Ok(product);
+    }
+
+    [HttpPost]
+    [ProducesResponseType<ProductDto>(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ProductDto>> CreateProduct(
+        CreateProductRequest request,
+        CancellationToken cancellationToken)
+    {
+        var product = await requestDispatcher.Send<CreateProductCommand, ProductDto>(
+            new CreateProductCommand(request.Name, request.Price),
+            cancellationToken);
+
+        return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, product);
     }
 
     [HttpPut("{id:int}")]

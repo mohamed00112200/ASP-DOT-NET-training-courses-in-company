@@ -1,8 +1,8 @@
 using Asp.Versioning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
-using Orders.Api.Data;
 using Orders.Api.Models;
+using Orders.Infrastructure.Data;
 
 namespace Orders.Api.Controllers;
 

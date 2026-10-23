@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Orders.Api.Models;
+using Orders.Domain.Entities;
 
-namespace Orders.Api.Data;
+namespace Orders.Infrastructure.Data;
 
 public sealed class ProductsDbContext(DbContextOptions<ProductsDbContext> options)
     : DbContext(options)

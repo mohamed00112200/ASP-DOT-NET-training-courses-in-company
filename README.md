@@ -1,8 +1,21 @@
-# Products API: Versioning and Advanced EF Core
+# Products API: Clean Architecture, CQRS, Versioning, and EF Core
 
-This project demonstrates API versioning and common Entity Framework Core
-patterns with a SQLite database. The database is created and seeded when the
-API starts.
+This project is split into four layers: `Orders.Domain`, `Orders.Application`,
+`Orders.Infrastructure`, and `Orders.Api`. The products endpoints use CQRS
+queries and commands, request DTO validation, and EF Core with SQL Server.
+The database is created and seeded when the API starts.
+
+## Clean Architecture and CQRS products API
+
+- `POST /api/products` creates a product from a JSON body containing `name`
+  and a positive `price`. The response is `201 Created` with a link to the
+  new product. Products use the seeded Electronics category.
+- `GET /api/products/{id}` returns a product by ID or `404 Not Found`.
+- `GET /api/products` returns the existing paged product response; optional
+  `pageNumber`, `pageSize`, and `search` query parameters are supported.
+- The API validates the create-product DTO and sends commands and queries
+  through application handlers. Domain entities live in `Orders.Domain`;
+  EF Core and SQL Server configuration live in `Orders.Infrastructure`.
 
 ## Endpoints
 
@@ -64,14 +77,16 @@ API starts.
 
 ## Run the API
 
-Install the .NET 10 SDK, then run these commands from the repository root:
+Install the .NET 10 SDK and SQL Server LocalDB, then run these commands from
+the repository root:
 
 ```powershell
 dotnet restore .\OrdersApiExample.slnx
 dotnet run --project .\Orders.Api\Orders.Api.csproj
 ```
 
-The SQLite database is stored in `Orders.Api\products.db`.
+The default connection string is in `Orders.Api\appsettings.json`. Override
+`ConnectionStrings__Products` to use a different SQL Server instance.
 
 ## Run the tests
 
@@ -79,5 +94,7 @@ The SQLite database is stored in `Orders.Api\products.db`.
 dotnet test .\OrdersApiExample.slnx
 ```
 
-The integration tests verify the versioned response contracts, pagination,
-category projection, prefix search, stale-token handling, and soft deletion.
+The integration tests use an in-memory SQLite database and verify the
+versioned response contracts, product creation and validation, lookup,
+pagination, category projection, prefix search, stale-token handling, and
+soft deletion.

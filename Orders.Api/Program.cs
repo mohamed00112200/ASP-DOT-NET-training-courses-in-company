@@ -1,14 +1,13 @@
 using Asp.Versioning;
-using Microsoft.EntityFrameworkCore;
-using Orders.Api.Data;
+using Orders.Application;
+using Orders.Infrastructure;
+using Orders.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddDbContext<ProductsDbContext>(options =>
-    options.UseSqlite(
-        builder.Configuration.GetConnectionString("Products")
-        ?? $"Data Source={Path.Combine(builder.Environment.ContentRootPath, "products.db")}"));
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services
     .AddApiVersioning(options =>
     {

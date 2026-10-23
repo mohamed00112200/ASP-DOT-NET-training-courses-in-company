@@ -72,6 +72,54 @@ public sealed class ProductsApiTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateProduct_ReturnsCreatedProductAndCanBeReadBack()
+    {
+        using var createResponse = await _client.PostAsJsonAsync(
+            "/api/products",
+            new { name = "Monitor", price = 4500m });
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        Assert.NotNull(createResponse.Headers.Location);
+
+        using var createdJson = await JsonDocument.ParseAsync(
+            await createResponse.Content.ReadAsStreamAsync());
+        var createdProduct = createdJson.RootElement;
+        var id = createdProduct.GetProperty("id").GetInt32();
+        Assert.Equal("Monitor", createdProduct.GetProperty("name").GetString());
+        Assert.Equal(4500m, createdProduct.GetProperty("price").GetDecimal());
+
+        using var getResponse = await _client.GetAsync($"/api/products/{id}");
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        using var getJson = await JsonDocument.ParseAsync(
+            await getResponse.Content.ReadAsStreamAsync());
+        Assert.Equal(id, getJson.RootElement.GetProperty("id").GetInt32());
+        Assert.Equal("Monitor", getJson.RootElement.GetProperty("name").GetString());
+
+        using var listResponse = await _client.GetAsync("/api/products");
+        Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
+        using var listJson = await JsonDocument.ParseAsync(
+            await listResponse.Content.ReadAsStreamAsync());
+        Assert.Equal(5, listJson.RootElement.GetProperty("totalCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task CreateProduct_RejectsInvalidRequest()
+    {
+        using var response = await _client.PostAsJsonAsync(
+            "/api/products",
+            new { name = " ", price = 0m });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetProductById_ReturnsNotFoundForMissingProduct()
+    {
+        using var response = await _client.GetAsync("/api/products/999");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task UpdateProduct_RejectsStaleTokenAndDeleteHidesProduct()
     {
         using var listResponse = await _client.GetAsync("/api/products?pageSize=1");
